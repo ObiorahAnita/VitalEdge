@@ -1,0 +1,21 @@
+{ 
+    "functions": {
+    "api/vitalAPI.py": {
+      "runtime": "python3.9",
+      "memory": 512,
+      "maxDuration": 10,
+      "includeFiles": [
+        "api/PINT.db"
+      ]
+    }
+  },
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "/api/vitalAPI.py"
+        }
+    ]
+}
+
+
+     
