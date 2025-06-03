@@ -9,7 +9,7 @@ conn = sqlite3.connect("PINT.db")
 cursor = conn.cursor()
 
 # Query the table
-cursor.execute("SELECT * FROM records")  # Replace 'my_table' with your table name
+cursor.execute("SELECT * FROM records")  # display all data in this table
 rows = cursor.fetchall()
 
 # Print results

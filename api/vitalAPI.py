@@ -48,7 +48,7 @@ async def root():
     }
 
 @app.get('/records', response_model=List[RecordsData])
-def records(
+async def records(
     device_id: Optional[str] = None,
     record_time: Optional[str] = None,
     steps: Optional[int] = None, 
@@ -100,4 +100,14 @@ async def retrieve_user_location (location: UserLocation):
     print(f"Data inserted: device_id{location.device_id}, lat{location.lat}, lon{location.lon}")
     return{"status": "successful",
            "data": location.model_dump()}
+
+@app.get("/debug")
+def debug():
+    import os
+    return {
+        "exists": os.path.exists("PINT.db"),
+        "size": os.path.getsize("PINT.db") if os.path.exists("PINT.db") else 0
+    }
+
+
 #uvicorn vitalAPI:app --reload
