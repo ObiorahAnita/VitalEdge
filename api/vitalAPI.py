@@ -5,8 +5,8 @@ import sqlite3
 import os
 from pathlib import Path 
 
-# BASE_DIR = Path(__file__).resolve().parent
-# DB_PATH = os.path.join(BASE_DIR, "PINT.db")
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = os.path.join(BASE_DIR, "PINT.db")
 
 class RecordsData(BaseModel):
     """
@@ -34,7 +34,7 @@ app = FastAPI()
 
 def get_db():
     """ Get information from DataBase"""
-    con = sqlite3.connect("PINT.db", check_same_thread=False)
+    con = sqlite3.connect(DB_PATH, check_same_thread=False)
     con.row_factory = sqlite3.Row
     try:
         yield con 
