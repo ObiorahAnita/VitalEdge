@@ -31,11 +31,12 @@ class RecordsData(BaseModel):
     emerg: Optional[int] = None
     
 
-# class UserLocation(BaseModel):
-#     """Defines the structure to retrieve user's location"""
-#     device_id: str
-#     lat: str
-#     lon: str
+class UserLocation(BaseModel):
+    """Defines the structure to retrieve user's location"""
+    device_id: str
+    record_date: str
+    lat: float
+    lon: float
 
 app = FastAPI()
 
@@ -80,7 +81,7 @@ async def records(
     db: sqlite3.Connection = Depends(get_db)
 ):
     cursor = db.cursor()
-    #cursor.execute(device_id, record_time, steps, heartrate, oxygen)
+    #cursor.execute(device_id, record_time, steps, heartrate, oxygen) - wrong approach
     cursor.execute("SELECT * FROM records")
     data = cursor.fetchall()
     return[
@@ -105,16 +106,32 @@ async def records(
         ) for row in data
     ]
 
-# @app.post('/user_location')
-# async def retrieve_user_location (location: UserLocation):
-     
-#     with sqlite3.connect('PINT.db') as db:
-#         print(location.device_id, location.lat, location.lon)
-#         cur = db.cursor()
-#         cur.execute("INSERT INTO locations (device_id, lat, lon) VALUES (?, ?, ?)", (location.device_id, location.lat, location.lon))
-#         db.commit()
-#     print(f"Data inserted: device_id{location.device_id}, lat{location.lat}, lon{location.lon}")
-#     return{"status": "successful",
-#            "data": location.model_dump()}
+@app.post('/user_location')
+async def retrieve_user_location (location: UserLocation):
+    with sqlite3.connect('PINT.db') as db:
+        print(location.device_id, location.record_date, location.lat, location.lon)
+        cur = db.cursor()
+        cur.execute("INSERT INTO records (device_id, record_date, lat, lon) VALUES (?, ?, ?, ?)", (location.device_id, location.record_date, location.lat, location.lon))
+        db.commit()
+    print(f"Data inserted: device_id{location.device_id}, record_date{location.record_date}, lat{location.lat}, lon{location.lon}")
+    return{"status": "successful",
+           "data": location.model_dump()}
 
+
+@app.post('/user_data')
+async def retrieve_user_data(data: RecordsData):
+    with sqlite3.connect('PINT.db') as db:
+        print(data.device_id, data.record_date, data.steps, data.heartrate, data.avg_heartrate, data.peak_heartrate, data.oxygen, 
+              data.avg_oxygen, data.humidity, data.avg_humidity, data.temp, data.avg_temp, data.co2, data.avg_co2, data.emerg)
+        cur = db.cursor()
+        cur.execute("INSERT INTO records (device_id, record_date, steps, heartrate, avg_heartrate, peak_heartrate, oxygen, avg_oxygen, humidity, avg_humidity, temp, avg_temp, co2, avg_co2, emerg) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                    data.device_id, data.record_date, data.steps, data.heartrate, data.avg_heartrate, data.peak_heartrate, data.oxygen, 
+                    data.avg_oxygen, data.humidity, data.avg_humidity, data.temp, data.avg_temp, data.co2, data.avg_co2, data.emerg)
+        db.commit()
+        print(f"Data inserted: device_id{data.device_id}, record_data{data.record_date}, steps{data.steps}")
+        print(f"\n heartrate{data.heartrate}, avg_heartrate{data.avg_heartrate}, peak_heartrate{data.peak_heartrate}, oxygen{data.oxygen}, avg_oxygen")
+        print(f"\n humidity{data.humidity}, avg_humidity{data.avg_humidity}, temp{data.temp}, avg_temp{data.avg_temp}")
+        print(f"\n co2{data.co2}, avg_co2{data.avg_co2}, emerg{data.emerg}")
+        return{"status": "successful",
+               "data": data.model_dump()}
 #uvicorn vitalAPI:app --reload
