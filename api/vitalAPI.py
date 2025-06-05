@@ -30,17 +30,12 @@ class RecordsData(BaseModel):
     lon: Optional[float] = None
     emerg: Optional[int] = None
     
-# class LocationData(BaseModel):
-#     """Defines the structure of the location table"""    
-#     device_id: str
-#     lat: str 
-#     lon: str
 
-class UserLocation(BaseModel):
-    """Defines the structure to retrieve user's location"""
-    device_id: str
-    lat: str
-    lon: str
+# class UserLocation(BaseModel):
+#     """Defines the structure to retrieve user's location"""
+#     device_id: str
+#     lat: str
+#     lon: str
 
 app = FastAPI()
 
@@ -59,8 +54,7 @@ async def root():
     return {
         "Status": "successful",
         "Instructions": [
-            "For patient record use: /records in url"
-            "For patient location use: /locations in url"
+            "For patient data records use: /records in url"
         ]
     }
 
@@ -111,25 +105,6 @@ async def records(
         ) for row in data
     ]
 
-# @app.get('/locations', response_model=List[LocationData])
-# def locations(
-#     device_id: Optional[str] = None,
-#     lat: Optional[str] = None, 
-#     lon: Optional[str] = None,
-#     db: sqlite3.Connection = Depends(get_db)
-# ):
-#     cur = db.cursor()
-#     cur.execute("SELECT * FROM locations")
-#     data = cur.fetchall()
-#     return[
-#         LocationData(
-#             device_id=row['device_id'], 
-#             lat=row['lat'], 
-#             lon=row['lon']
-#         ) for row in data
-#     ]
-
-
 # @app.post('/user_location')
 # async def retrieve_user_location (location: UserLocation):
      
@@ -141,14 +116,5 @@ async def records(
 #     print(f"Data inserted: device_id{location.device_id}, lat{location.lat}, lon{location.lon}")
 #     return{"status": "successful",
 #            "data": location.model_dump()}
-
-@app.get("/debug")
-def debug():
-    import os
-    return {
-        "exists": os.path.exists("PINT.db"),
-        "size": os.path.getsize("PINT.db") if os.path.exists("PINT.db") else 0
-    }
-
 
 #uvicorn vitalAPI:app --reload
