@@ -35,16 +35,24 @@ class PatientData(BaseModel):
     Defines the structure of the record table 
     """
     device_id: str
+    record_date: str  
+    humidity: Optional[float] = None
+    temp: Optional[float] = None
+    co2: Optional[int] = None
+    room_records_inserted: Optional[int] = None
+    emerg: Optional[int] = None    
+    
+class WristData(BaseModel):
+    """
+    Defines the structure of the record table 
+    """
+    device_id: str
     record_date: str
     steps: Optional[int] = None 
     heartrate: Optional[float] = None  
     oxygen: Optional[float] = None  
-    humidity: Optional[float] = None
-    temp: Optional[float] = None
-    co2: Optional[int] = None
-    records_inserted: Optional[int] = None
-    emerg: Optional[int] = None    
-    
+    band_records_inserted: Optional[int] = None
+    emerg: Optional[int] = None      
 
 class UserLocation(BaseModel):
     """Defines the structure to retrieve user's location"""
@@ -139,42 +147,55 @@ async def retrieve_user_data(data: PatientData):
         cur.execute(
             """
             INSERT INTO records (
-                device_id, record_date, steps, heartrate, avg_heartrate, peak_heartrate,
-                oxygen, avg_oxygen, humidity, avg_humidity, temp, avg_temp,
-                co2, avg_co2, records_inserted, emerg
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                device_id, record_date, humidity, avg_humidity, temp, avg_temp,
+                co2, avg_co2, room_records_inserted, emerg
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(device_id, record_date) DO UPDATE SET
-            steps = excluded.steps,
-            heartrate = excluded.heartrate,
-            oxygen = excluded.oxygen,
             humidity = excluded.humidity,
             temp = excluded.temp,
             co2 = excluded.co2,
             emerg = excluded.emerg,
-            avg_heartrate = ((records.avg_heartrate * records.records_inserted) + excluded.heartrate) / (records.records_inserted + 1),
-            avg_oxygen    = ((records.avg_oxygen * records.records_inserted) + excluded.oxygen) / (records.records_inserted + 1),
-            avg_humidity  = ((records.avg_humidity * records.records_inserted) + excluded.humidity) / (records.records_inserted + 1),
-            avg_temp      = ((records.avg_temp * records.records_inserted) + excluded.temp) / (records.records_inserted + 1),
-            avg_co2       = ((records.avg_co2 * records.records_inserted) + excluded.co2) / (records.records_inserted + 1),
+            avg_humidity  = ((records.avg_humidity * records.room_records_inserted) + excluded.humidity) / (records.room_records_inserted + 1),
+            avg_temp      = ((records.avg_temp * records.room_records_inserted) + excluded.temp) / (records.room_records_inserted + 1),
+            avg_co2       = ((records.avg_co2 * records.room_records_inserted) + excluded.co2) / (records.room_records_inserted + 1),
+            room_records_inserted = records.room_records_inserted + 1
+            """,
+            (
+                data.device_id, data.record_date, data.humidity, data.humidity,
+                data.temp, data.temp, data.co2, data.co2, data.room_records_inserted, data.emerg
+            )
+        )
+        db.commit()
+        # print(f"Data inserted: device_id{data.device_id}, record_data{data.record_date}, steps{data.steps}")
+        return{"status": "successful",
+               "data": data.model_dump()}    
+    
+@app.post('/user_wrist')
+async def retrieve_user_location (wrist: WristData):
+    with sqlite3.connect(DB_PATH) as db:
+        cur = db.cursor()
+        cur = db.cursor()
+        cur.execute("""INSERT INTO records (device_id, record_date, steps, heartrate, avg_heartrate, peak_heartrate, oxygen, avg_oxygen, band_records_inserted, emerg) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(device_id, record_date) DO UPDATE SET
+            steps = excluded.steps,
+            heartrate = excluded.heartrate,
+            oxygen = excluded.oxygen,
+            emerg = excluded.emerg,
+            avg_heartrate = ((records.avg_heartrate * records.band_records_inserted) + excluded.heartrate) / (records.band_records_inserted + 1),
+            avg_oxygen    = ((records.avg_oxygen * records.band_records_inserted) + excluded.oxygen) / (records.band_records_inserted + 1),
             peak_heartrate = 
             CASE 
                 WHEN excluded.heartrate > records.peak_heartrate THEN excluded.heartrate
                 ELSE records.peak_heartrate
             END,
-            records_inserted = records.records_inserted + 1
-            """,
-            (
-                data.device_id, data.record_date, data.steps, data.heartrate, data.heartrate, data.heartrate, data.oxygen, data.oxygen, data.humidity, data.humidity,
-                data.temp, data.temp, data.co2, data.co2, data.records_inserted, data.emerg
-            )
-        )
+            band_records_inserted = records.band_records_inserted + 1
+        """, 
+        (wrist.device_id, wrist.record_date, wrist.steps, wrist.heartrate, wrist.heartrate, wrist.heartrate, wrist.oxygen, wrist.oxygen, wrist.band_records_inserted, wrist.emerg))
         db.commit()
-        print(f"Data inserted: device_id{data.device_id}, record_data{data.record_date}, steps{data.steps}")
-        # print(f"\n heartrate{data.heartrate}, avg_heartrate{data.avg_heartrate}, peak_heartrate{data.peak_heartrate}, oxygen{data.oxygen}, avg_oxygen")
-        # print(f"\n humidity{data.humidity}, avg_humidity{data.avg_humidity}, temp{data.temp}, avg_temp{data.avg_temp}")
-        # print(f"\n co2{data.co2}, avg_co2{data.avg_co2}, emerg{data.emerg}")
-        return{"status": "successful",
-               "data": data.model_dump()}    
+    # print(f"Data inserted: device_id{location.device_id}, record_date{location.record_date}, lat{location.lat}, lon{location.lon}")
+    return{"status": "successful",
+           "data": wrist.model_dump()}    
 #uvicorn vitalAPI:app --reload
 
 #uvicorn vitalAPI:app --host 0.0.0.0 --port 8000 --reload
