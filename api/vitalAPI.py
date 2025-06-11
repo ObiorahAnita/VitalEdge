@@ -177,4 +177,4 @@ async def retrieve_user_data(data: PatientData):
                "data": data.model_dump()}    
 #uvicorn vitalAPI:app --reload
 
-#uvicorn vitalAPI:app --host 0.0.0.0 --port 8000
+#uvicorn vitalAPI:app --host 0.0.0.0 --port 8000 --reload
