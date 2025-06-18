@@ -34,8 +34,7 @@ class PatientData(BaseModel):
     """
     Defines the structure of the record table 
     """
-    device_id: str
-    record_date: str  
+    device_id: str 
     humidity: Optional[float] = None
     temp: Optional[float] = None
     co2: Optional[int] = None
@@ -47,7 +46,6 @@ class WristData(BaseModel):
     Defines the structure of the record table 
     """
     device_id: str
-    record_date: str
     steps: Optional[int] = None 
     heartrate: Optional[float] = None  
     oxygen: Optional[float] = None  
@@ -57,7 +55,6 @@ class WristData(BaseModel):
 class UserLocation(BaseModel):
     """Defines the structure to retrieve user's location"""
     device_id: str
-    record_date: str
     lat: float
     lon: float
 
@@ -126,12 +123,12 @@ async def retrieve_user_location (location: UserLocation):
         # print(location.device_id, location.record_date, location.lat, location.lon)
         cur = db.cursor()
         cur = db.cursor()
-        cur.execute("""INSERT INTO records (device_id, record_date, lat, lon) VALUES (?, ?, ?, ?)"
+        cur.execute("""INSERT INTO records (device_id, record_date, lat, lon) VALUES (?, date('now'), ?, ?)"
                     ON CONFLICT(device_id, record_date) DO UPDATE SET
                     lat = excluded.lat,
                     lon = excluded.lon
         """, 
-        (location.device_id, location.record_date, location.lat, location.lon))
+        (location.device_id, location.lat, location.lon))
         db.commit()
     print(f"Data inserted: device_id{location.device_id}, record_date{location.record_date}, lat{location.lat}, lon{location.lon}")
     return{"status": "successful",
@@ -149,7 +146,7 @@ async def retrieve_user_data(data: PatientData):
             INSERT INTO records (
                 device_id, record_date, humidity, avg_humidity, temp, avg_temp,
                 co2, avg_co2, room_records_inserted, emerg
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(device_id, record_date) DO UPDATE SET
             humidity = excluded.humidity,
             temp = excluded.temp,
@@ -161,7 +158,7 @@ async def retrieve_user_data(data: PatientData):
             room_records_inserted = records.room_records_inserted + 1
             """,
             (
-                data.device_id, data.record_date, data.humidity, data.humidity,
+                data.device_id, data.humidity, data.humidity,
                 data.temp, data.temp, data.co2, data.co2, data.room_records_inserted, data.emerg
             )
         )
@@ -176,7 +173,7 @@ async def retrieve_user_location (wrist: WristData):
         cur = db.cursor()
         cur = db.cursor()
         cur.execute("""INSERT INTO records (device_id, record_date, steps, heartrate, avg_heartrate, peak_heartrate, oxygen, avg_oxygen, band_records_inserted, emerg) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(device_id, record_date) DO UPDATE SET
             steps = excluded.steps,
             heartrate = excluded.heartrate,
@@ -191,7 +188,7 @@ async def retrieve_user_location (wrist: WristData):
             END,
             band_records_inserted = records.band_records_inserted + 1
         """, 
-        (wrist.device_id, wrist.record_date, wrist.steps, wrist.heartrate, wrist.heartrate, wrist.heartrate, wrist.oxygen, wrist.oxygen, wrist.band_records_inserted, wrist.emerg))
+        (wrist.device_id, wrist.steps, wrist.heartrate, wrist.heartrate, wrist.heartrate, wrist.oxygen, wrist.oxygen, wrist.band_records_inserted, wrist.emerg))
         db.commit()
     # print(f"Data inserted: device_id{location.device_id}, record_date{location.record_date}, lat{location.lat}, lon{location.lon}")
     return{"status": "successful",
